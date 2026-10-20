@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>日語 33 拗音 ＆ 長音練習系統</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Helvetica Neue", "PingFang TC", "Microsoft JhengHei", sans-serif; }
+    body { background: #f8fafc; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 25px 15px; color: #0f172a; }
+
+    h1 { font-size: 24px; margin-bottom: 6px; text-align: center; }
+    p.sub { color: #64748b; font-size: 14px; margin-bottom: 20px; text-align: center; }
+
+    /* 功能切換主頁籤 */
+    .tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; justify-content: center; max-width: 800px; }
+    .tab-btn { padding: 9px 18px; border: 1px solid #cbd5e1; background: white; color: #334155; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: bold; transition: all 0.2s; }
+    .tab-btn.active { background: #1e3a8a; color: white; border-color: #1e3a8a; }
+
+    /* 行別篩選列 */
+    .filter-bar { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; max-width: 680px; margin-bottom: 16px; }
+    .filter-btn { padding: 5px 12px; border: 1px solid #cbd5e1; background: white; color: #475569; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; }
+    .filter-btn.active { background: #2563eb; color: white; border-color: #2563eb; }
+
+    /* 主卡片容器 */
+    .card-box {
+      width: 100%;
+      max-width: 440px;
+      min-height: 450px;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.06);
+      border: 1px solid #e2e8f0;
+      padding: 24px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 15px;
+    }
+
+    /* 發音按鈕 */
+    .audio-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: #eff6ff;
+      border: 2px solid #60a5fa;
+      color: #1d4ed8;
+      font-size: 17px;
+      font-weight: bold;
+      padding: 12px 34px;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all 0.15s;
+      margin: 8px 0;
+    }
+    .audio-btn:hover { background: #dbeafe; transform: scale(1.02); }
+
+    /* 測驗 4 選 1 網格 */
+    .grid-4 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      width: 100%;
+      margin: 10px 0;
+    }
+    .opt-btn {
+      height: 90px;
+      background: #f8fafc;
+      border: 2px solid #cbd5e1;
+      border-radius: 16px;
+      font-size: 46px;
+      font-weight: bold;
+      color: #0f172a;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+    .opt-btn:hover { border-color: #2563eb; background: #eff6ff; }
+    .opt-btn.correct { background: #dcfce7 !important; border-color: #16a34a !important; color: #15803d !important; }
+    .opt-btn.wrong { background: #fee2e2 !important; border-color: #dc2626 !important; color: #b91c1c !important; }
+
+    /* 長音對比雙選網格 */
+    .grid-choon {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 100%;
+      margin: 10px 0;
+    }
+    .opt-btn-choon {
+      padding: 14px 16px;
+      background: #f8fafc;
+      border: 2px solid #cbd5e1;
+      border-radius: 14px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .opt-btn-choon:hover { border-color: #2563eb; background: #eff6ff; }
+    .opt-btn-choon.correct { background: #dcfce7 !important; border-color: #16a34a !important; color: #15803d !important; }
+    .opt-btn-choon.wrong { background: #fee2e2 !important; border-color: #dc2626 !important; color: #b91c1c !important; }
+    .choon-kana { font-size: 26px; font-weight: bold; color: inherit; }
+    .choon-desc { font-size: 13px; color: #64748b; margin-top: 2px; }
+
+    /* 拗音大字卡字體 */
+    .big-youon { font-size: 96px; font-weight: bold; color: #0f172a; line-height: 1.1; margin: 15px 0; letter-spacing: -2px; user-select: none; }
+    .romaji-tag { font-size: 22px; font-weight: bold; color: #64748b; height: 26px; }
+
+    /* 單字卡圖文樣式 */
+    .word-tag { font-size: 12px; font-weight: bold; padding: 3px 10px; border-radius: 20px; background: #e0f2fe; color: #0369a1; margin-bottom: 6px; }
+    .word-img-box {
+      width: 105px;
+      height: 105px;
+      background: #f8fafc;
+      border: 2px solid #e2e8f0;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 58px;
+      margin: 4px 0;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+    }
+    .word-kana-display { font-size: 40px; font-weight: bold; color: #0f172a; margin: 4px 0 2px 0; letter-spacing: 1px; text-align: center; line-height: 1.2; word-break: break-all; }
+    .word-romaji-display { font-size: 17px; font-weight: bold; color: #64748b; margin-bottom: 3px; }
+    .word-meaning-display { font-size: 20px; font-weight: 600; color: #1e293b; margin-bottom: 6px; }
+
+    .feedback { font-size: 14px; font-weight: bold; min-height: 38px; text-align: center; line-height: 1.4; }
+
+    .ctrl-row { display: flex; gap: 10px; width: 100%; margin-top: 5px; }
+    .btn-action {
+      flex: 1;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid #cbd5e1;
+      background: white;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .btn-primary { background: #1e3a8a; color: white; border-color: #1e3a8a; }
+    .btn-primary:hover { background: #1e40af; }
+
+    .status-bar { font-size: 13px; color: #64748b; font-weight: bold; text-align: center; }
+  </style>
+</head>
+<body>
+
+  <h1>日語 33 拗音 ＆ 長音練習系統</h1>
+  <p class="sub">標準東京發音 ｜ 33 拗音測驗・大字卡・長短音辨析 ＆ 拗音長音單字</p>
+
+  <!-- 主功能切換 -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchMode('youon_quiz')">🎯 33 拗音聽力測驗</button>
+    <button class="tab-btn" onclick="switchMode('youon_card')">🔤 33 拗音大字卡</button>
+    <button class="tab-btn" onclick="switchMode('choon')">➖ 長音聽力辨析</button>
+    <button class="tab-btn" onclick="switchMode('words')">📖 生活單字（拗音・長音）</button>
+  </div>
+
+  <!-- 行別篩選列 -->
+  <div class="filter-bar" id="filterBar"></div>
+
+  <!-- 主卡片區域 -->
+  <div class="card-box" id="mainContainer"></div>
+
+  <div class="status-bar" id="statusBar"></div>
+
+  <script>
+    // 33 拗音完整資料庫（含清音・濁音・半濁音拗音）
+    const youonDatabase = [
+      { kana: "きゃ", romaji: "kya", row: "kya", traps: ["きゅ", "きょ", "しゃ"] },
+      { kana: "きゅ", romaji: "kyu", row: "kya", traps: ["きゃ", "きょ", "しゅ"] },
+      { kana: "きょ", romaji: "kyo", row: "kya", traps: ["きゃ", "きゅ", "しょ"] },
+
+      { kana: "しゃ", romaji: "sha", row: "sha", traps: ["しゅ", "しょ", "ちゃ"] },
+      { kana: "しゅ", romaji: "shu", row: "sha", traps: ["しゃ", "しょ", "ちゅ"] },
+      { kana: "しょ", romaji: "sho", row: "sha", traps: ["しゃ", "しゅ", "ちょ"] },
+
+      { kana: "ちゃ", romaji: "cha", row: "cha", traps: ["ちゅ", "ちょ", "しゃ"] },
+      { kana: "ちゅ", romaji: "chu", row: "cha", traps: ["ちゃ", "ちょ", "しゅ"] },
+      { kana: "ちょ", romaji: "cho", row: "cha", traps: ["ちゃ", "ちゅ", "しょ"] },
+
+      { kana: "にゃ", romaji: "nya", row: "nya", traps: ["にゅ", "にょ", "みゃ"] },
+      { kana: "にゅ", romaji: "nyu", row: "nya", traps: ["にゃ", "にょ", "みゅ"] },
+      { kana: "にょ", romaji: "nyo", row: "nya", traps: ["にゃ", "にゅ", "みょ"] },
+
+      { kana: "ひゃ", romaji: "hya", row: "hya", traps: ["ひゅ", "ひょ", "びゃ"] },
+      { kana: "ひゅ", romaji: "hyu", row: "hya", traps: ["ひゃ", "ひょ", "ぴゅ"] },
+      { kana: "ひょ", romaji: "hyo", row: "hya", traps: ["ひゃ", "ひゅ", "ぴょ"] },
+
+      { kana: "みゃ", romaji: "mya", row: "mya", traps: ["みゅ", "みょ", "にゃ"] },
+      { kana: "みゅ", romaji: "myu", row: "mya", traps: ["みゃ", "みょ", "にゅ"] },
+      { kana: "みょ", romaji: "myo", row: "mya", traps: ["みゃ", "みゅ", "にょ"] },
+
+      { kana: "りゃ", romaji: "rya", row: "rya", traps: ["りゅ", "りょ", "きゃ"] },
+      { kana: "りゅ", romaji: "ryu", row: "rya", traps: ["りゃ", "りょ", "きゅ"] },
+      { kana: "りょ", romaji: "ryo", row: "rya", traps: ["りゃ", "りゅ", "きょ"] },
+
+      { kana: "ぎゃ", romaji: "gya", row: "daku", traps: ["ぎゅ", "ぎょ", "じゃ"] },
+      { kana: "ぎゅ", romaji: "gyu", row: "daku", traps: ["ぎゃ", "ぎょ", "じゅ"] },
+      { kana: "ぎょ", romaji: "gyo", row: "daku", traps: ["ぎゃ", "ぎゅ", "じょ"] },
+
+      { kana: "じゃ", romaji: "ja", row: "daku", traps: ["じゅ", "じょ", "ちゃ"] },
+      { kana: "じゅ", romaji: "ju", row: "daku", traps: ["じゃ", "じょ", "ちゅ"] },
+      { kana: "じょ", romaji: "jo", row: "daku", traps: ["じゃ", "じゅ", "ちょ"] },
+
+      { kana: "びゃ", romaji: "bya", row: "daku", traps: ["びゅ", "びょ", "ぴゃ"] },
+      { kana: "びゅ", romaji: "byu", row: "daku", traps: ["びゃ", "びょ", "ぴゃ"] },
+      { kana: "びょ", romaji: "byo", row: "daku", traps: ["びゃ", "びょ", "ぴゃ"] },
+
+      { kana: "ぴゃ", romaji: "pya", row: "daku", traps: ["ぴゅ", "ぴょ", "ひゃ"] },
+      { kana: "ぴゅ", romaji: "pyu", row: "daku", traps: ["ぴゃ", "ぴょ", "ひゅ"] },
+      { kana: "ぴょ", romaji: "pyo", row: "daku", traps: ["ぴゃ", "ぴょ", "ひょ"] }
+    ];
+
+    // 長音 vs 短音 經典對比庫（已修正為標準長音最小對立對）
+    const choonDatabase = [
+      {
+        short: { kana: "おばさん", audio: "小母さん", romaji: "obasan", mean: "阿姨 / 姑姑" },
+        long:  { kana: "おばあさん", audio: "お婆さん", romaji: "obāsan", mean: "奶奶 / 外婆" }
+      },
+      {
+        short: { kana: "おじさん", audio: "伯父さん", romaji: "ojisan", mean: "叔叔 / 伯父" },
+        long:  { kana: "おじいさん", audio: "お爺さん", romaji: "ojīsan", mean: "爺爺 / 外公" }
+      },
+      {
+        short: { kana: "ゆき", audio: "雪", romaji: "yuki", mean: "下雪" },
+        long:  { kana: "ゆうき", audio: "勇気", romaji: "yūki", mean: "勇氣" }
+      },
+      {
+        short: { kana: "とり", audio: "鳥", romaji: "tori", mean: "小鳥" },
+        long:  { kana: "とおり", audio: "通り", romaji: "tōri", mean: "街道 / 馬路" }
+      },
+      {
+        short: { kana: "ここ", audio: "ここ", romaji: "koko", mean: "這裡" },
+        long:  { kana: "こうこう", audio: "高校", romaji: "kōkō", mean: "高中" }
+      },
+      {
+        short: { kana: "え", audio: "絵", romaji: "e", mean: "圖畫" },
+        long:  { kana: "ええ", audio: "ええ", romaji: "ē", mean: "是的 / 嗯" }
+      },
+      {
+        short: { kana: "つき", audio: "月", romaji: "tsuki", mean: "月亮" },
+        long:  { kana: "つうき", audio: "通気", romaji: "tsūki", mean: "通風" }
+      },
+      {
+        short: { kana: "とる", audio: "取る", romaji: "toru", mean: "拿取" },
+        long:  { kana: "とおる", audio: "通る", romaji: "tōru", mean: "通過" }
+      },
+      {
+        short: { kana: "ちず", audio: "地図", romaji: "chizu", mean: "地圖" },
+        long:  { kana: "チーズ", audio: "チーズ", romaji: "chīzu", mean: "起司" }
+      },
+      {
+        short: { kana: "かど", audio: "角", romaji: "kado", mean: "轉角 / 角落" },
+        long:  { kana: "カード", audio: "カード", romaji: "kādo", mean: "卡片" }
+      },
+      {
+        short: { kana: "ビル", audio: "ビル", romaji: "biru", mean: "大樓 / 建築" },
+        long:  { kana: "ビール", audio: "ビール", romaji: "bīru", mean: "啤酒" }
+      },
+      {
+        short: { kana: "こもん", audio: "顧問", romaji: "komon", mean: "顧問" },
+        long:  { kana: "こうもん", audio: "校門", romaji: "kōmon", mean: "校門" }
+      }
+    ];
+
+    // 生活單字庫（全數為「拗音」與「長音」代表性生活單字）
+    const wordsDatabase = [
+      // 1. 拗音單字
+      { kana: "おちゃ", audio: "お茶", romaji: "ocha", meaning: "綠茶 / 茶", img: "🍵", tag: "拗音" },
+      { kana: "でんしゃ", audio: "電車", romaji: "densha", meaning: "電車 / 火車", img: "🚃", tag: "拗音" },
+      { kana: "しゃしん", audio: "写真", romaji: "shashin", meaning: "照片", img: "📷", tag: "拗音" },
+      { kana: "じしょ", audio: "辞書", romaji: "jisho", meaning: "字典", img: "📕", tag: "拗音" },
+      { kana: "かいしゃ", audio: "会社", romaji: "kaisha", meaning: "公司", img: "🏢", tag: "拗音" },
+      { kana: "しゅみ", audio: "趣味", romaji: "shumi", meaning: "興趣 / 愛好", img: "🎨", tag: "拗音" },
+      { kana: "ひゃく", audio: "百", romaji: "hyaku", meaning: "一百", img: "💯", tag: "拗音" },
+
+      // 2. 拗音 ＋ 長音 複合單字
+      { kana: "ぎゅうにゅう", audio: "牛乳", romaji: "gyūnyū", meaning: "牛奶", img: "🥛", tag: "拗音＋長音" },
+      { kana: "びょういん", audio: "病院", romaji: "byōin", meaning: "醫院", img: "🏥", tag: "拗音＋長音" },
+      { kana: "りょこう", audio: "旅行", romaji: "ryokō", meaning: "旅行", img: "✈️", tag: "拗音＋長音" },
+      { kana: "とうきょう", audio: "東京", romaji: "tōkyō", meaning: "東京", img: "🗼", tag: "拗音＋長音" },
+      { kana: "りょうり", audio: "料理", romaji: "ryōri", meaning: "料理 / 做菜", img: "🍳", tag: "拗音＋長音" },
+      { kana: "じどうしゃ", audio: "自動車", romaji: "jidōsha", meaning: "汽車", img: "🚗", tag: "拗音＋長音" },
+      { kana: "きょう", audio: "今日", romaji: "kyō", meaning: "今天", img: "📅", tag: "拗音＋長音" },
+      { kana: "しょうゆ", audio: "醤油", romaji: "shōyu", meaning: "醬油", img: "🍶", tag: "拗音＋長音" },
+      { kana: "きゅうり", audio: "きゅうり", romaji: "kyūri", meaning: "小黃瓜", img: "🥒", tag: "拗音＋長音" },
+
+      // 3. 長音單字（平假名長音 & 片假名外來語長音）
+      { kana: "おかあさん", audio: "お母さん", romaji: "okāsan", meaning: "媽媽", img: "👩", tag: "長音" },
+      { kana: "おとうさん", audio: "お父さん", romaji: "otōsan", meaning: "爸爸", img: "👨", tag: "長音" },
+      { kana: "おにいさん", audio: "お兄さん", romaji: "onīsan", meaning: "哥哥", img: "👦", tag: "長音" },
+      { kana: "おねえさん", audio: "お姉さん", romaji: "onēsan", meaning: "姊姊", img: "👧", tag: "長音" },
+      { kana: "せんせい", audio: "先生", romaji: "sensei", meaning: "老師", img: "🧑‍🏫", tag: "長音" },
+      { kana: "ひこうき", audio: "飛行機", romaji: "hikōki", meaning: "飛機", img: "🛫", tag: "長音" },
+      { kana: "ぼうし", audio: "帽子", romaji: "bōshi", meaning: "帽子", img: "🧢", tag: "長音" },
+      { kana: "コーヒー", audio: "コーヒー", romaji: "kōhī", meaning: "咖啡", img: "☕", tag: "長音" },
+      { kana: "ケーキ", audio: "ケーキ", romaji: "kēki", meaning: "蛋糕", img: "🍰", tag: "長音" },
+      { kana: "スーパー", audio: "スーパー", romaji: "sūpā", meaning: "超市", img: "🛒", tag: "長音" },
+      { kana: "ノート", audio: "ノート", romaji: "nōto", meaning: "筆記本", img: "📓", tag: "長音" },
+      { kana: "スープ", audio: "スープ", romaji: "sūpu", meaning: "濃湯", img: "🥣", tag: "長音" },
+      { kana: "タクシー", audio: "タクシー", romaji: "takushī", meaning: "計程車", img: "🚕", tag: "長音" }
+    ];
+
+    let currentMode = 'youon_quiz';
+    let selectedYouonRow = 'all';
+    let activeYouonList = [...youonDatabase];
+
+    let currentItem = null;
+    let currentChoonItem = null;
+    let choonTargetKey = 'short';
+
+    let lastTarget = "";
+    let quizAnswered = false;
+    let score = { correct: 0, total: 0 };
+    let youonCardIndex = 0;
+    let wordIndex = 0;
+    let choonIndex = 0;
+
+    // 東京標準發音核心播放器
+    function playTokyoNativeAudio(textToSpeak) {
+      const primaryUrl = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=ja&q=${encodeURIComponent(textToSpeak)}`;
+      const audio = new Audio(primaryUrl);
+
+      audio.play().catch(() => {
+        const secondaryUrl = `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(textToSpeak)}&le=jap`;
+        const audio2 = new Audio(secondaryUrl);
+
+        audio2.play().catch(() => {
+          if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(textToSpeak + "。");
+            u.lang = 'ja-JP';
+            u.rate = 1.0;
+            u.pitch = 1.0;
+            const voices = window.speechSynthesis.getVoices();
+            const jpVoice = voices.find(v => v.lang.startsWith('ja') && (v.name.includes('Google') || v.name.includes('Kyoko') || v.name.includes('Natural') || v.name.includes('Otoya')));
+            if (jpVoice) u.voice = jpVoice;
+            window.speechSynthesis.speak(u);
+          }
+        });
+      });
+    }
+
+    function shuffle(arr) {
+      return [...arr].sort(() => Math.random() - 0.5);
+    }
+
+    // 渲染拗音行別篩選列
+    function renderFilters() {
+      const bar = document.getElementById("filterBar");
+      if (currentMode === 'youon_quiz' || currentMode === 'youon_card') {
+        bar.style.display = 'flex';
+        const yRows = [
+          { id: 'all', name: '全部 33 拗音' },
+          { id: 'kya', name: 'きゃ行' }, { id: 'sha', name: 'しゃ行' }, { id: 'cha', name: 'ちゃ行' },
+          { id: 'nya', name: 'にゃ行' }, { id: 'hya', name: 'ひゃ行' }, { id: 'mya', name: 'みゃ行' },
+          { id: 'rya', name: 'りゃ行' }, { id: 'daku', name: '濁音・半濁音拗音' }
+        ];
+        bar.innerHTML = yRows.map(r => `<button class="filter-btn ${selectedYouonRow === r.id ? 'active' : ''}" onclick="setYouonRow('${r.id}')">${r.name}</button>`).join('');
+      } else {
+        bar.style.display = 'none';
+      }
+    }
+
+    // 切換模式
+    function switchMode(mode) {
+      currentMode = mode;
+      document.querySelectorAll(".tab-btn").forEach((b, i) => {
+        b.classList.toggle("active", 
+          (mode === 'youon_quiz' && i === 0) ||
+          (mode === 'youon_card' && i === 1) ||
+          (mode === 'choon' && i === 2) ||
+          (mode === 'words' && i === 3)
+        );
+      });
+      renderFilters();
+      nextRound();
+    }
+
+    function setYouonRow(row) {
+      selectedYouonRow = row;
+      renderFilters();
+      if (row === 'all') {
+        activeYouonList = [...youonDatabase];
+      } else {
+        activeYouonList = youonDatabase.filter(item => item.row === row);
+      }
+      youonCardIndex = 0;
+      nextRound();
+    }
+
+    function nextRound() {
+      const container = document.getElementById("mainContainer");
+      const status = document.getElementById("statusBar");
+
+      // 1. 33 拗音聽力測驗（四選一）
+      if (currentMode === 'youon_quiz') {
+        quizAnswered = false;
+        let pool = activeYouonList.filter(item => item.kana !== lastTarget);
+        if (pool.length === 0) pool = activeYouonList;
+        currentItem = pool[Math.floor(Math.random() * pool.length)];
+        lastTarget = currentItem.kana;
+
+        const options = shuffle([currentItem.kana, ...currentItem.traps]);
+
+        container.innerHTML = `
+          <div style="font-size:14px; font-weight:bold; color:#64748b;">【拗音聽力測驗】請選出聽到的拗音：</div>
+
+          <button class="audio-btn" onclick="playTokyoNativeAudio('${currentItem.kana}')">
+            🔊 播放發音
+          </button>
+
+          <div class="grid-4">
+            ${options.map(opt => `<button class="opt-btn" onclick="judgeYouonQuiz('${opt}')" id="y_${opt}">${opt}</button>`).join('')}
+          </div>
+
+          <div class="feedback" id="quizFeedback">點選按鈕作答</div>
+
+          <div class="ctrl-row">
+            <button class="btn-action btn-primary" onclick="nextRound()">換下一題 ➔</button>
+          </div>
+        `;
+        status.innerText = `測驗範圍：${activeYouonList.length} 音 ｜ 成績：${score.correct} / ${score.total}`;
+        setTimeout(() => playTokyoNativeAudio(currentItem.kana), 250);
+
+      // 2. 33 拗音大字卡
+      } else if (currentMode === 'youon_card') {
+        currentItem = activeYouonList[youonCardIndex];
+        container.innerHTML = `
+          <div style="font-size:14px; font-weight:bold; color:#64748b;">全套 33 拗音大字卡</div>
+
+          <div class="big-youon">${currentItem.kana}</div>
+          <div class="romaji-tag">${currentItem.romaji}</div>
+
+          <button class="audio-btn" onclick="playTokyoNativeAudio('${currentItem.kana}')">
+            🔊 發音
+          </button>
+
+          <div class="ctrl-row">
+            <button class="btn-action" onclick="prevYouonCard()">上一張</button>
+            <button class="btn-action" onclick="randomYouonCard()">隨機抽</button>
+            <button class="btn-action btn-primary" onclick="nextYouonCard()">下一張</button>
+          </div>
+        `;
+        status.innerText = `進度：第 ${youonCardIndex + 1} / ${activeYouonList.length} 音`;
+
+      // 3. 長音聽力辨析（短音 vs 長音）
+      } else if (currentMode === 'choon') {
+        quizAnswered = false;
+        choonIndex = Math.floor(Math.random() * choonDatabase.length);
+        currentChoonItem = choonDatabase[choonIndex];
+        choonTargetKey = Math.random() < 0.5 ? 'short' : 'long';
+        const targetObj = currentChoonItem[choonTargetKey];
+
+        container.innerHTML = `
+          <div style="font-size:14px; font-weight:bold; color:#64748b;">【長短音辨析】聽聽看是「短音」還是「長音」？</div>
+
+          <button class="audio-btn" onclick="playTokyoNativeAudio('${targetObj.audio}')">
+            🔊 播放辨析發音
+          </button>
+
+          <div class="grid-choon">
+            <button class="opt-btn-choon" id="choon_short" onclick="judgeChoon('short')">
+              <div class="choon-kana">${currentChoonItem.short.kana}</div>
+              <div class="choon-desc">${currentChoonItem.short.romaji} ｜ ${currentChoonItem.short.mean}</div>
+            </button>
+            <button class="opt-btn-choon" id="choon_long" onclick="judgeChoon('long')">
+              <div class="choon-kana">${currentChoonItem.long.kana}</div>
+              <div class="choon-desc">${currentChoonItem.long.romaji} ｜ ${currentChoonItem.long.mean}</div>
+            </button>
+          </div>
+
+          <div class="feedback" id="quizFeedback">仔細聆聽發音長度後作答</div>
+
+          <div class="ctrl-row">
+            <button class="btn-action btn-primary" onclick="nextRound()">換下一題 ➔</button>
+          </div>
+        `;
+        status.innerText = `長短音題庫：${choonDatabase.length} 組經典對照 ｜ 成績：${score.correct} / ${score.total}`;
+        setTimeout(() => playTokyoNativeAudio(targetObj.audio), 250);
+
+      // 4. 生活單字練習（拗音・長音）
+      } else if (currentMode === 'words') {
+        const w = wordsDatabase[wordIndex];
+        container.innerHTML = `
+          <span class="word-tag">${w.tag}</span>
+
+          <div class="word-img-box">${w.img}</div>
+          <div class="word-kana-display">${w.kana}</div>
+          <div class="word-romaji-display">${w.romaji}</div>
+          <div class="word-meaning-display">${w.meaning}</div>
+
+          <button class="audio-btn" onclick="playTokyoNativeAudio('${w.audio}')">
+            🔊 發音
+          </button>
+
+          <div class="ctrl-row">
+            <button class="btn-action" onclick="prevWord()">上一個</button>
+            <button class="btn-action btn-primary" onclick="nextWord()">下一個</button>
+          </div>
+        `;
+        status.innerText = `進度：第 ${wordIndex + 1} / ${wordsDatabase.length} 個（拗音與長音專題）`;
+      }
+    }
+
+    // 拗音測驗判斷
+    function judgeYouonQuiz(choice) {
+      if (quizAnswered) return;
+      quizAnswered = true;
+      score.total++;
+      const fb = document.getElementById("quizFeedback");
+      if (choice === currentItem.kana) {
+        score.correct++;
+        document.getElementById(`y_${choice}`).classList.add("correct");
+        fb.innerHTML = `<span style="color:#16a34a;">✅ 答對了！【${currentItem.kana}】（${currentItem.romaji}）</span>`;
+      } else {
+        document.getElementById(`y_${choice}`).classList.add("wrong");
+        document.getElementById(`y_${currentItem.kana}`).classList.add("correct");
+        fb.innerHTML = `<span style="color:#dc2626;">❌ 答錯了！正確答案是【${currentItem.kana}】（${currentItem.romaji}）</span>`;
+      }
+      document.getElementById("statusBar").innerText = `測驗範圍：${activeYouonList.length} 音 ｜ 成績：${score.correct} / ${score.total}`;
+    }
+
+    // 長音對比測驗判斷
+    function judgeChoon(choice) {
+      if (quizAnswered) return;
+      quizAnswered = true;
+      score.total++;
+      const fb = document.getElementById("quizFeedback");
+      const targetObj = currentChoonItem[choonTargetKey];
+
+      if (choice === choonTargetKey) {
+        score.correct++;
+        document.getElementById(`choon_${choice}`).classList.add("correct");
+        fb.innerHTML = `<span style="color:#16a34a;">✅ 聽力正確！答案是【${targetObj.kana}】(${targetObj.mean})</span>`;
+      } else {
+        document.getElementById(`choon_${choice}`).classList.add("wrong");
+        document.getElementById(`choon_${choonTargetKey}`).classList.add("correct");
+        fb.innerHTML = `<span style="color:#dc2626;">❌ 聽錯囉！正確發音是【${targetObj.kana}】(${targetObj.mean})</span>`;
+      }
+      document.getElementById("statusBar").innerText = `長短音題庫：${choonDatabase.length} 組經典對照 ｜ 成績：${score.correct} / ${score.total}`;
+    }
+
+    // 拗音字卡翻頁
+    function nextYouonCard() { youonCardIndex = (youonCardIndex + 1) % activeYouonList.length; nextRound(); }
+    function prevYouonCard() { youonCardIndex = (youonCardIndex - 1 + activeYouonList.length) % activeYouonList.length; nextRound(); }
+    function randomYouonCard() { youonCardIndex = Math.floor(Math.random() * activeYouonList.length); nextRound(); }
+
+    // 單字翻頁
+    function nextWord() { wordIndex = (wordIndex + 1) % wordsDatabase.length; nextRound(); }
+    function prevWord() { wordIndex = (wordIndex - 1 + wordsDatabase.length) % wordsDatabase.length; nextRound(); }
+
+    // 初始化啟動
+    renderFilters();
+    nextRound();
+  </script>
+</body>
+</html>
